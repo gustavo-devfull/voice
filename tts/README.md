@@ -27,4 +27,6 @@ curl -X POST https://SEU-APP.vercel.app/api/tts -H "Authorization: Bearer $TTS_A
   -d '{"text":"Hello","lang":"en"}' -o hello.mp3
 ```
 
+Abra a raiz do site (`public/index.html`) para usar pelo navegador: escolha o idioma, cole o texto e baixe o MP3.
+
 Limites: resposta de até ~4,5 MB por requisição e `maxDuration` de 60 s (ajuste em `vercel.json` conforme o plano).
