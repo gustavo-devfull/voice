@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Texto para MP3</title>
+<style>
+  body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#1a1a1a}
+  h1{font-size:1.4rem}
+  label{display:block;margin:1rem 0 .25rem;font-weight:600}
+  textarea,select,input{width:100%;box-sizing:border-box;padding:.6rem;font:inherit;border:1px solid #bbb;border-radius:6px}
+  textarea{min-height:9rem;resize:vertical}
+  button{margin-top:1rem;padding:.7rem 1.2rem;font:inherit;font-weight:600;border:0;border-radius:6px;background:#111;color:#fff;cursor:pointer}
+  button:disabled{opacity:.5;cursor:wait}
+  #status{margin-top:1rem;min-height:1.5rem}
+  .err{color:#b00020}
+  small{color:#666}
+</style>
+</head>
+<body>
+<h1>Texto para MP3</h1>
+<form id="f">
+  <label for="lang">Idioma</label>
+  <select id="lang">
+    <option value="pt">Português</option>
+    <option value="en">English</option>
+    <option value="es">Español</option>
+  </select>
+  <label for="text">Texto</label>
+  <textarea id="text" maxlength="5000" required></textarea>
+  <small><span id="count">0</span>/5000</small>
+  <label for="key">Chave de acesso <small>(se o servidor exigir)</small></label>
+  <input id="key" type="password" autocomplete="off">
+  <button id="go" type="submit">Gerar MP3</button>
+</form>
+<div id="status" role="status"></div>
+<audio id="player" controls hidden style="width:100%"></audio>
+<script>
+const $ = id => document.getElementById(id);
+$("text").addEventListener("input", () => $("count").textContent = $("text").value.length);
+let url;
+$("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const st = $("status"), btn = $("go");
+  st.className = ""; st.textContent = "Gerando áudio…"; btn.disabled = true; $("player").hidden = true;
+  try {
+    const headers = {"Content-Type": "application/json"};
+    if ($("key").value) headers.Authorization = "Bearer " + $("key").value;
+    const r = await fetch("/api/tts", {method: "POST", headers,
+      body: JSON.stringify({text: $("text").value, lang: $("lang").value})});
+    if (!r.ok) {
+      let msg = "Erro " + r.status;
+      try { msg = (await r.json()).error || msg; } catch {}
+      throw new Error(msg);
+    }
+    const blob = await r.blob();
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(blob);
+    $("player").src = url; $("player").hidden = false;
+    const name = "audio-" + $("lang").value + ".mp3";
+    st.textContent = "";
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.textContent = "Baixar " + name;
+    st.append(a);
+  } catch (err) {
+    st.className = "err"; st.textContent = err.message;
+  } finally { btn.disabled = false; }
+});
+</script>
+</body>
+</html>
