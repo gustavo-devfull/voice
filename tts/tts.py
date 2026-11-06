@@ -17,7 +17,7 @@ VOICES = {l: os.environ.get(f"VOICE_{l.upper()}", "default") for l in LANGS}
 MAX_CHARS = 5000
 
 
-def synthesize(text: str, lang: str, voice: str | None = None) -> Path:
+def synthesize_bytes(text: str, lang: str, voice: str | None = None) -> bytes:
     lang = lang.lower()[:2]
     if lang not in LANGS:
         raise ValueError(f"idioma inválido '{lang}'; use: {', '.join(LANGS)}")
@@ -42,6 +42,12 @@ def synthesize(text: str, lang: str, voice: str | None = None) -> Path:
     # Erro pode vir como JSON; MP3 válido começa com 'ID3' ou sync de frame 0xFF 0xEx.
     if not (data[:3] == b"ID3" or (len(data) > 2 and data[0] == 0xFF and data[1] & 0xE0 == 0xE0)):
         raise RuntimeError(f"resposta não é MP3: {data[:200]!r}")
+    return data
+
+
+def synthesize(text: str, lang: str, voice: str | None = None) -> Path:
+    data = synthesize_bytes(text, lang, voice)
+    lang = lang.lower()[:2]
     slug = re.sub(r"\W+", "-", text[:40], flags=re.U).strip("-").lower() or "audio"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / f"{time.strftime('%Y%m%d-%H%M%S')}-{lang}-{slug}.mp3"
